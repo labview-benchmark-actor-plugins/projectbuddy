@@ -380,6 +380,7 @@ try {
     $verificationState.exitCode = 1
     Assert-Throw { & $immutableStagePath @immutableStageArguments } '*release attestation verification failed*'
     $verificationState.exitCode = 0
+    $global:LASTEXITCODE = 0
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $blockedStageRoot 'dependencies.lvlibp'))) "Failed attestation verification staged an LVLIBP."
 
     $manifest.dependencies[0].stagePath = "nested/inner/dependencies.lvlibp"
