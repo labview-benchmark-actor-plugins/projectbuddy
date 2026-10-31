@@ -1,0 +1,36 @@
+name: ProjectBuddy Build Plan
+
+on:
+  pull_request:
+    paths:
+      - "catalog/**"
+      - "scripts/build_plan.py"
+      - "tests/test_build_plan.py"
+      - ".github/workflows/build-all-plan.yml"
+  push:
+    branches: [main]
+    paths:
+      - "catalog/**"
+      - "scripts/build_plan.py"
+      - "tests/test_build_plan.py"
+      - ".github/workflows/build-all-plan.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Validate module catalog and produce plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ProjectBuddy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Validate catalog and write plan summary
+        shell: bash
+        run: python3 scripts/build_plan.py --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Test build planner
+        shell: bash
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v

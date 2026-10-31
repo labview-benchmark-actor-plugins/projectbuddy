@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "organization": "labview-benchmark-actor-plugins",
+  "modules": [
+    {
+      "repository": "labview-benchmark-actor-plugins/core",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/dependencies",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/Launcher",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/modules",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/replay",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/testcoordinator",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/UserEventRecorder",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": []
+    }
+  ]
+}

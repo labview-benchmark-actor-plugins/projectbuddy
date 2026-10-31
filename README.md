@@ -25,6 +25,26 @@ The example in [`examples/release-manifest.json`](examples/release-manifest.json
 is synthetic. Its file sizes, digests, commit, and run URL are placeholders and
 must not be published as release evidence.
 
+## Org build plan
+
+`catalog/modules.json` is the org control-plane inventory. Entries start
+disabled with `needs-classification`; the plan workflow does not dispatch
+builds. A module can be enabled only after it is classified as release-ready
+and has a safe repository-local release workflow. Dependencies are ordered
+before consumers; missing, disabled, or cyclic release dependencies fail plan
+validation.
+
+Run the plan and tests locally with:
+
+```bash
+python3 scripts/build_plan.py --format markdown
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+The GitHub workflow is plan-only. Cross-repository dispatch and Windows release
+execution remain disabled until the org runner group and least-privilege app are
+authorized.
+
 ## Current scope
 
 The initial contract and example do not build LabVIEW packages. The reusable
