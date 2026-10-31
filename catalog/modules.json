@@ -26,7 +26,8 @@
       "enabled": false,
       "dependsOn": [],
       "classificationNotes": [
-        "Sandbox configs define source-distribution, package-installer, and PPL outputs for the fork profile; the org profile defines source-distribution and VIPB outputs.",
+        "The existing fork-level and org-level SandboxSBOMReporting profiles both allow only native-windows.",
+        "The fork-level profile defines source-distribution, package-installer, and PPL outputs; the org-level profile defines source-distribution and a VIPB package output. Keep these profiles distinct.",
         "Both profiles pin jdp_science_jsontext 1.9.1.125, oglib_boolean 6.0.0.9, oglib_comparison 6.0.0.4, and the LabVIEW 2026 runtime package."
       ],
       "blockers": [
