@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1.0",
   "module": {
-    "repository": "labview-benchmark-actor-plugins/core",
-    "id": "labview-benchmark-actor-plugins/core",
+    "repository": "labview-benchmark-actor-plugins/replay",
+    "id": "replay",
     "version": "1.0.0"
   },
   "source": {
-    "repository": "labview-benchmark-actor-plugins/core",
+    "repository": "labview-benchmark-actor-plugins/replay",
     "ref": "refs/tags/v1.0.0",
     "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
@@ -14,7 +14,7 @@
     "tag": "v1.0.0",
     "publishedAt": "2026-10-31T00:00:00Z",
     "immutable": true,
-    "url": "https://github.com/labview-benchmark-actor-plugins/core/releases/tag/v1.0.0"
+    "url": "https://github.com/labview-benchmark-actor-plugins/replay/releases/tag/v1.0.0"
   },
   "toolchain": {
     "labviewVersion": "2026",
@@ -26,13 +26,15 @@
     }
   },
   "artifacts": {
-    "packages": [
+    "releaseAssets": [
       {
-        "id": "core",
+        "id": "replay-source",
         "version": "1.0.0",
-        "format": "vip",
+        "buildSpec": "replay",
+        "kind": "source-distribution",
+        "format": "zip",
         "asset": {
-          "fileName": "core-1.0.0.vip",
+          "fileName": "replay-1.0.0.zip",
           "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "sizeBytes": 1048576
         }
@@ -40,12 +42,13 @@
     ],
     "sboms": [
       {
-        "subjectPackageId": "core",
-        "subjectPackageVersion": "1.0.0",
+        "subjectAssetId": "replay-source",
+        "subjectAssetVersion": "1.0.0",
+        "subjectAssetKind": "source-distribution",
         "format": "CycloneDX",
         "specVersion": "1.5",
         "asset": {
-          "fileName": "core-1.0.0.cdx.sbom.json",
+          "fileName": "replay-1.0.0.cdx.sbom.json",
           "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "sizeBytes": 32768
         }
@@ -55,6 +58,21 @@
   "dependencies": [],
   "validation": {
     "status": "passed",
+    "buildOutputs": [
+      {
+        "buildSpec": "replay",
+        "outputType": "source-distribution",
+        "outcome": "built",
+        "includedInReleaseAsset": "replay-1.0.0.zip",
+        "runUrl": "https://github.com/labview-benchmark-actor-plugins/replay/actions/runs/1234567890"
+      },
+      {
+        "buildSpec": "Launcher",
+        "outputType": "executable",
+        "outcome": "executed",
+        "runUrl": "https://github.com/labview-benchmark-actor-plugins/replay/actions/runs/1234567890"
+      }
+    ],
     "tests": [
       {
         "name": "package-build",

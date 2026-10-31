@@ -4,106 +4,124 @@
   "modules": [
     {
       "repository": "labview-benchmark-actor-plugins/core",
+      "testedSourceRepository": "svelderrainruiz/core",
       "role": "framework-module",
       "status": "blocked",
       "enabled": false,
-      "dependsOn": [
-        "labview-benchmark-actor-plugins/dependencies",
-        "labview-benchmark-actor-plugins/modules"
-      ],
+      "dependsOn": [],
       "classificationNotes": [
-        "Core.lvproj contains Core.lvlib.",
-        "Core.lvlib links KeyToVirtualKey.vi from dependencies and KeybdEventSerializerLUT.vi from modules/coordinator."
+        "The SandboxSBOMReporting override selects the tested personal fork svelderrainruiz/core; this is the source of test evidence.",
+        "The tested fork contains Core.lvproj but declares no LabVIEW build specs; the org core repository has no Core.lvproj.",
+        "The org core repository is a placeholder; implementation copied under the deprecated org modules aggregate is not equivalent to a standalone org release candidate."
       ],
       "blockers": [
-        "Resolve or replace cross-repository LVLIB paths in a fresh checkout layout."
+        "The org promotion target does not contain the tested fork implementation; establish and verify its source before release planning."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/dependencies",
+      "testedSourceRepository": "svelderrainruiz/dependencies",
       "role": "shared-dependency-package",
       "status": "blocked",
       "enabled": false,
       "dependsOn": [],
       "classificationNotes": [
-        "The existing fork-level and org-level SandboxSBOMReporting profiles both allow only native-windows.",
-        "The fork-level profile defines source-distribution, package-installer, and PPL outputs; the org-level profile defines source-distribution and a VIPB package output. Keep these profiles distinct.",
+        "Both the tested-fork and org profiles allow only native-windows.",
+        "SandboxSBOMReporting selects svelderrainruiz/dependencies as its tested source; its Dependencies.lvproj defines source-distribution, VIP, and PPL build specs.",
+        "Operator-confirmed build evidence for the tested fork includes the lba-plugins-dependencies-ppl spec producing dependencies.lvlibp. Its configured Bld_sbomFile is Dependencies_lba-plugins-dependencies-ppl.cdx.sbom.json; no generated SBOM is present locally to verify metadata.component or bind a digest to a release asset.",
+        "The LVLIBP can be published as its own immutable release asset and consumed as a build-scope dependency; the consumer should pin its exact release tag, asset filename, version, and stage path relative to the workflow checkout root.",
+        "The dependencies producer has no cross-repository source dependency; its LabVIEW library links resolve within its own source tree.",
+        "The org Dependencies.lvproj defines a source-distribution spec but no PPL spec. Its VIPB remains under development and open for contribution, not a confirmed build or release target.",
         "Both profiles pin jdp_science_jsontext 1.9.1.125, oglib_boolean 6.0.0.9, oglib_comparison 6.0.0.4, and the LabVIEW 2026 runtime package."
       ],
       "blockers": [
-        "dependencies.lvlib references Test Procedure.ctl from testcoordinator, while testcoordinator consumes dependencies.lvlibp; resolve the release/test boundary.",
-        "The VIPB source/output folders are build-workspace paths and it references lbap-dependencies.vipc, which is not present in the repository."
+        "Align the org promotion target with the tested dependencies.lvlibp output, or explicitly define a different org release contract.",
+        "VIPB-only: the in-development build uses workspace source/output paths and references lbap-dependencies.vipc, which is not present; this does not change the separate tested-fork LVLIBP build evidence."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/Launcher",
+      "testedSourceRepository": "svelderrainruiz/Launcher",
       "role": "plugin-module",
       "status": "needs-classification",
       "enabled": false,
       "dependsOn": [],
       "classificationNotes": [
-        "Launcher.lvproj contains Launcher.lvlib; the LVLIB describes launching cloneable modules."
+        "SandboxSBOMReporting selects svelderrainruiz/Launcher as its tested source.",
+        "The tested fork contains src/Launcher.lvproj but declares no build specs; the org Launcher repository has no standalone LabVIEW project.",
+        "The org Launcher repository is a placeholder; Launcher.lvlib implementation copied under the deprecated org modules aggregate is not evidence for a standalone org release."
       ],
       "blockers": [
-        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+        "The org promotion target does not contain the tested fork implementation; establish and verify its source before release planning."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/modules",
+      "testedSourceRepository": "svelderrainruiz/modules",
       "role": "integration-aggregate",
-      "status": "needs-classification",
+      "status": "blocked",
       "enabled": false,
-      "dependsOn": [
-        "labview-benchmark-actor-plugins/core",
-        "labview-benchmark-actor-plugins/Launcher",
-        "labview-benchmark-actor-plugins/replay",
-        "labview-benchmark-actor-plugins/UserEventRecorder"
-      ],
+      "dependsOn": [],
       "classificationNotes": [
-        "modules.lvproj aggregates Core, Launcher, and UserEventRecorder; coordinator also references Replay.",
-        "Contains prototype projects and a VIPC archive with 86 package entries, all currently marked not included, not dependencies, and not pinned."
+        "The modules repository is deprecated and retained in this catalog only to explain historical org layout; it is not a release candidate.",
+        "Org modules contains copies of implementation that are placeholders in several standalone org repositories; that does not make the aggregate the tested source of truth.",
+        "The org and tested-fork aggregates each contain a coordinator Launcher EXE build spec; the tested fork also defines a modules source-distribution spec. These aggregate outputs are not standalone module release evidence.",
+        "The repository contains prototype projects and an inactive VIPC archive with 86 package entries; none are a pinned release dependency contract."
       ],
       "blockers": [
-        "Decide whether this repository is a distributable product or an integration workspace; do not publish its inactive VIPC as the dependency contract."
+        "Do not enable or publish this deprecated aggregate; test and promote the individually classified repositories instead."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/replay",
+      "testedSourceRepository": "svelderrainruiz/replay",
       "role": "plugin-module",
       "status": "needs-classification",
       "enabled": false,
       "dependsOn": [],
       "classificationNotes": [
-        "Contains Replay.lvproj and Replay.lvlib."
+        "SandboxSBOMReporting selects svelderrainruiz/replay as its tested source.",
+        "The org and tested-fork Replay projects both define a Launcher EXE build output; the tested fork also has a separate replay source-distribution build spec, which the org Replay project lacks.",
+        "Neither Replay Launcher EXE build spec declares Bld_sbomFile, and the source-distribution spec has no configured SBOM path. Generate a candidate SBOM and verify its subject before selecting a release asset."
       ],
       "blockers": [
-        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+        "Define the published release asset and generate/verify its matching SBOM; the Launcher executable need not be a standalone release asset."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/testcoordinator",
+      "testedSourceRepository": "svelderrainruiz/testcoordinator",
       "role": "test-harness",
       "status": "needs-classification",
       "enabled": false,
       "dependsOn": ["labview-benchmark-actor-plugins/dependencies"],
       "classificationNotes": [
-        "Contains testcoordinator.lvproj, API tests, and an LVLibP dependency on the shared dependencies package."
+        "SandboxSBOMReporting selects svelderrainruiz/testcoordinator as its tested source; TestCoordinatorx64 emits TestCoordinator.exe and the build spec/config both name testcoordinator_TestCoordinatorx64.cdx.sbom.json.",
+        "No generated TestCoordinator SBOM is present locally to verify metadata.component or bind its digest to TestCoordinator.exe.",
+        "The tested fork's root testcoordinator.lvproj refers to ../Libraries and ../../dependencies.lvlibp outside the isolated checkout; all 51 project URLs were unresolved in the checkout used by the native runner.",
+        "The LVLIBP reference can be satisfied by staging a pinned dependencies release at dependencies.lvlibp in the SandboxSBOMReporting checkout root; the ../Libraries references still need source-layout alignment.",
+        "TestCoordinator consumes the published dependencies.lvlibp as a build dependency; it is not a source dependency of the dependencies producer.",
+        "The org target differs materially: its build spec emits Application.exe and has no Bld_sbomFile; org test evidence and the tested-fork SBOM evidence are not interchangeable."
       ],
       "blockers": [
-        "Confirm whether this repository publishes a reusable module or remains a test harness."
+        "Align the tested-fork ../Libraries references with files in the checkout; stage the exact pinned dependencies.lvlibp release at the SandboxSBOMReporting checkout root before building.",
+        "Reconcile the org build spec and tests with the tested fork before promotion; establish the SBOM subject for any published asset."
       ]
     },
     {
       "repository": "labview-benchmark-actor-plugins/UserEventRecorder",
+      "testedSourceRepository": "svelderrainruiz/UserEventRecorder",
       "role": "plugin-module",
       "status": "needs-classification",
       "enabled": false,
       "dependsOn": [],
       "classificationNotes": [
-        "UserEventRecorder.lvproj contains UserEventRecorder.lvlib and API tests."
+        "SandboxSBOMReporting selects svelderrainruiz/UserEventRecorder as its tested source.",
+        "The tested fork contains UserEventRecorder.lvproj but declares no build specs; the org UserEventRecorder repository has no standalone LabVIEW project.",
+        "The org UserEventRecorder repository is a placeholder; implementation copied under the deprecated org modules aggregate is not evidence for a standalone org release."
       ],
       "blockers": [
-        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+        "The org promotion target does not contain the tested fork implementation; establish and verify its source before release planning."
       ]
     }
   ]

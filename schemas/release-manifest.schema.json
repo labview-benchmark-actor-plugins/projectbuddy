@@ -59,10 +59,27 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["labviewVersion", "labviewBitness", "vipmVersion", "runner"],
+      "dependencies": {
+        "labviewVilib": ["labviewBaseImageDigest"]
+      },
       "properties": {
         "labviewVersion": { "$ref": "#/definitions/nonBlankString" },
         "labviewBitness": { "type": "string", "enum": ["32", "64"] },
         "vipmVersion": { "$ref": "#/definitions/nonBlankString" },
+        "vipmDesktopVersion": { "$ref": "#/definitions/nonBlankString" },
+        "labviewBaseImageDigest": {
+          "type": "string",
+          "pattern": "^nationalinstruments/labview@sha256:[A-Fa-f0-9]{64}$"
+        },
+        "labviewVilib": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["installedVersion", "source"],
+          "properties": {
+            "installedVersion": { "$ref": "#/definitions/nonBlankString" },
+            "source": { "const": "preinstalled-base-image" }
+          }
+        },
         "runner": {
           "type": "object",
           "additionalProperties": false,
@@ -77,12 +94,12 @@
     "artifacts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["packages", "sboms"],
+      "required": ["releaseAssets", "sboms"],
       "properties": {
-        "packages": {
+        "releaseAssets": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/definitions/packageArtifact" }
+          "items": { "$ref": "#/definitions/releaseAssetProduct" }
         },
         "sboms": {
           "type": "array",
@@ -99,9 +116,34 @@
     "validation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "tests"],
+      "required": ["status", "buildOutputs", "tests"],
       "properties": {
         "status": { "const": "passed" },
+        "buildOutputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["buildSpec", "outputType", "outcome", "runUrl"],
+            "properties": {
+              "buildSpec": { "$ref": "#/definitions/nonBlankString" },
+              "outputType": {
+                "type": "string",
+                "enum": ["executable", "source-distribution", "vip", "lvlibp", "vipc", "nipkg", "installer", "other"]
+              },
+              "outcome": { "type": "string", "enum": ["built", "executed"] },
+              "includedInReleaseAsset": { "$ref": "#/definitions/safeFileName" },
+              "runUrl": { "type": "string", "format": "uri" }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "outputType": { "const": "executable" } }, "required": ["outputType"] },
+                "then": { "properties": { "outcome": { "const": "executed" } } }
+              }
+            ]
+          }
+        },
         "tests": {
           "type": "array",
           "minItems": 1,
@@ -126,35 +168,43 @@
       "additionalProperties": false,
       "required": ["fileName", "sha256", "sizeBytes"],
       "properties": {
-        "fileName": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
-        },
+        "fileName": { "$ref": "#/definitions/safeFileName" },
         "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
         "sizeBytes": { "type": "integer", "minimum": 1 }
       }
     },
-    "packageArtifact": {
+    "safeFileName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+    },
+    "releaseAssetProduct": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "format", "asset"],
+      "required": ["id", "version", "buildSpec", "kind", "format", "asset"],
       "properties": {
         "id": { "$ref": "#/definitions/nonBlankString" },
-        "version": {
-          "description": "Exact dependency version; ranges and floating aliases are not release identities.",
-          "$ref": "#/definitions/nonBlankString"
+        "version": { "$ref": "#/definitions/nonBlankString" },
+        "buildSpec": { "$ref": "#/definitions/nonBlankString" },
+        "kind": {
+          "type": "string",
+          "enum": ["vip", "lvlibp", "executable", "source-distribution", "vipc", "nipkg", "installer", "other"]
         },
         "format": { "$ref": "#/definitions/nonBlankString" },
+        "target": { "$ref": "#/definitions/nonBlankString" },
         "asset": { "$ref": "#/definitions/asset" }
       }
     },
     "sbomArtifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["subjectPackageId", "subjectPackageVersion", "format", "specVersion", "asset"],
+      "required": ["subjectAssetId", "subjectAssetVersion", "subjectAssetKind", "format", "specVersion", "asset"],
       "properties": {
-        "subjectPackageId": { "$ref": "#/definitions/nonBlankString" },
-        "subjectPackageVersion": { "$ref": "#/definitions/nonBlankString" },
+        "subjectAssetId": { "$ref": "#/definitions/nonBlankString" },
+        "subjectAssetVersion": { "$ref": "#/definitions/nonBlankString" },
+        "subjectAssetKind": {
+          "type": "string",
+          "enum": ["vip", "lvlibp", "executable", "source-distribution", "vipc", "nipkg", "installer", "other"]
+        },
         "format": { "const": "CycloneDX" },
         "specVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
         "asset": { "$ref": "#/definitions/asset" }
@@ -163,17 +213,44 @@
     "dependency": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ecosystem", "name", "version"],
+      "required": ["ecosystem", "name", "version", "scope"],
       "properties": {
         "ecosystem": {
           "type": "string",
-          "enum": ["vipm", "nipkg", "labview-runtime", "git", "other"]
+          "enum": ["vipm", "nipkg", "lvlibp", "labview-runtime", "git", "other"]
         },
         "name": { "$ref": "#/definitions/nonBlankString" },
         "version": { "$ref": "#/definitions/nonBlankString" },
+        "scope": { "type": "string", "enum": ["build", "runtime"] },
         "repository": { "$ref": "#/definitions/nonBlankString" },
-        "releaseTag": { "$ref": "#/definitions/nonBlankString" }
-      }
+        "releaseTag": { "$ref": "#/definitions/nonBlankString" },
+        "assetFileName": { "$ref": "#/definitions/safeFileName" },
+        "stagePath": {
+          "description": "Path relative to the consumer workflow checkout root, not the module checkout.",
+          "allOf": [
+            { "$ref": "#/definitions/safeRelativePath" },
+            { "type": "string", "pattern": "\\.lvlibp$" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ecosystem": { "const": "lvlibp" },
+              "scope": { "const": "build" }
+            },
+            "required": ["ecosystem", "scope"]
+          },
+          "then": {
+            "required": ["repository", "releaseTag", "assetFileName", "stagePath"]
+          }
+        }
+      ]
+    },
+    "safeRelativePath": {
+      "type": "string",
+      "pattern": "^(?![\\\\/])(?![A-Za-z]:)(?!.*[<>:\"|?*\\x00-\\x1F])(?!.*(^|[\\\\/])\\.\\.([\\\\/]|$))\\S.*$"
     }
   }
 }

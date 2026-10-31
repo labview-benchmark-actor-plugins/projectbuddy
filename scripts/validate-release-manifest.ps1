@@ -41,28 +41,40 @@ if ($manifest.source.ref -cne "refs/tags/$($manifest.release.tag)") {
     throw "Source ref does not match the release tag."
 }
 
-$packageKeys = @{}
-foreach ($package in $manifest.artifacts.packages) {
-    $packageKey = "$($package.id)@$($package.version)"
-    if ($packageKeys.ContainsKey($packageKey)) {
-        throw "Duplicate package identity in release manifest: $packageKey"
+$productKeys = @{}
+$releaseAssetNames = @{}
+foreach ($product in $manifest.artifacts.releaseAssets) {
+    $productKey = "$($product.kind)|$($product.id)@$($product.version)"
+    if ($productKeys.ContainsKey($productKey)) {
+        throw "Duplicate release product identity in manifest: $productKey"
     }
-    $packageKeys[$packageKey] = $true
+    $productKeys[$productKey] = $true
+    if ($releaseAssetNames.ContainsKey($product.asset.fileName)) {
+        throw "Duplicate release asset filename in manifest: $($product.asset.fileName)"
+    }
+    $releaseAssetNames[$product.asset.fileName] = $true
 }
 
 foreach ($dependency in $manifest.dependencies) {
     if ($dependency.version -ieq "latest" -or $dependency.version -match '[*<>~^]') {
         throw "Floating or range dependency version is not allowed: $($dependency.name) $($dependency.version)"
     }
+    if ($dependency.releaseTag -and ($dependency.releaseTag -ieq "latest" -or $dependency.releaseTag -match '[*<>~^]')) {
+        throw "Floating or range dependency release tag is not allowed: $($dependency.name) $($dependency.releaseTag)"
+    }
 }
 
 $artifactRoot = [System.IO.Path]::GetFullPath($ArtifactDirectory)
+$artifactRootItem = Get-Item -LiteralPath $artifactRoot -Force
+if ($artifactRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    throw "Release artifact directory is a link or reparse point: $artifactRoot"
+}
 $assets = @(
-    $manifest.artifacts.packages | ForEach-Object { $_.asset }
+    $manifest.artifacts.releaseAssets | ForEach-Object { $_.asset }
     $manifest.artifacts.sboms | ForEach-Object { $_.asset }
 )
-if ($manifest.artifacts.provenance) {
-    $assets += $manifest.artifacts.provenance
+if ($manifest.artifacts.attestation) {
+    $assets += $manifest.artifacts.attestation
 }
 
 foreach ($asset in $assets) {
@@ -76,7 +88,10 @@ foreach ($asset in $assets) {
         throw "Release asset is missing: $($asset.fileName)"
     }
 
-    $file = Get-Item -LiteralPath $assetPath
+    $file = Get-Item -LiteralPath $assetPath -Force
+    if ($file.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+        throw "Release asset is a link or reparse point: $($asset.fileName)"
+    }
     if ($file.Length -ne $asset.sizeBytes) {
         throw "Release asset size mismatch: $($asset.fileName)"
     }
@@ -86,11 +101,19 @@ foreach ($asset in $assets) {
     }
 }
 
-foreach ($sbom in $manifest.artifacts.sboms) {
-    $subjectKey = "$($sbom.subjectPackageId)@$($sbom.subjectPackageVersion)"
-    if (-not $packageKeys.ContainsKey($subjectKey)) {
-        throw "SBOM subject does not identify a released package: $subjectKey"
+foreach ($buildOutput in $manifest.validation.buildOutputs) {
+    if ($buildOutput.includedInReleaseAsset -and -not $releaseAssetNames.ContainsKey($buildOutput.includedInReleaseAsset)) {
+        throw "Build output references an unknown release asset: $($buildOutput.includedInReleaseAsset)"
     }
+}
+
+$sbomKeys = @{}
+foreach ($sbom in $manifest.artifacts.sboms) {
+    $subjectKey = "$($sbom.subjectAssetKind)|$($sbom.subjectAssetId)@$($sbom.subjectAssetVersion)"
+    if (-not $productKeys.ContainsKey($subjectKey)) {
+        throw "SBOM subject does not identify a released asset: $subjectKey"
+    }
+    $sbomKeys[$subjectKey] = $true
 
     $sbomPath = Join-Path $artifactRoot $sbom.asset.fileName
     try {
@@ -102,10 +125,16 @@ foreach ($sbom in $manifest.artifacts.sboms) {
         throw "CycloneDX format or spec version does not match the release manifest: $($sbom.asset.fileName)"
     }
     $component = $sbomDocument.metadata.component
-    if (-not $component -or $component.name -cne $sbom.subjectPackageId -or
-        $component.version -cne $sbom.subjectPackageVersion) {
-        throw "CycloneDX metadata component does not match the released package: $subjectKey"
+    if (-not $component -or $component.name -cne $sbom.subjectAssetId -or
+        $component.version -cne $sbom.subjectAssetVersion) {
+        throw "CycloneDX metadata component does not match the released asset: $subjectKey"
     }
 }
 
-Write-Output "Release manifest and $($assets.Count) release assets passed validation."
+foreach ($productKey in $productKeys.Keys) {
+    if (-not $sbomKeys.ContainsKey($productKey)) {
+        throw "Released asset does not have a matching CycloneDX SBOM: $productKey"
+    }
+}
+
+Write-Output "Release manifest and $($assets.Count) artifact files passed validation."
