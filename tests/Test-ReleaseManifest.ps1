@@ -70,6 +70,12 @@ try {
     Write-FixtureManifest $manifest
 
     & $validatorPath -ManifestPath $manifestPath -ArtifactDirectory $fixtureRoot -SchemaPath $schemaPath | Out-Null
+    $publishedAt = $manifest.release.publishedAt
+    $manifest.release.Remove("publishedAt")
+    Write-FixtureManifest $manifest
+    & $validatorPath -ManifestPath $manifestPath -ArtifactDirectory $fixtureRoot -SchemaPath $schemaPath | Out-Null
+    $manifest.release.publishedAt = $publishedAt
+    Write-FixtureManifest $manifest
     $manifest.toolchain.Remove("vipmDesktopVersion")
     $manifest.toolchain.Remove("labviewBaseImageDigest")
     $manifest.toolchain.Remove("labviewVilib")

@@ -14,6 +14,9 @@ versions, LabVIEW/VIPM toolchain, exact dependency versions, published release
 assets, matching CycloneDX SBOMs, digests, runner build outputs, and successful
 test runs. A release may contain multiple asset types; each SBOM names its
 released asset id, kind, and version.
+`release.publishedAt` is optional so a manifest can be attached to a draft before
+an immutable release is published. When present it is informational; verify the
+authoritative publication time and immutable state from GitHub release metadata.
 
 For container builds, `toolchain.labviewBaseImageDigest` records the immutable
 NI LabVIEW image reference. If that image supplies the LabVIEW VILib package,
