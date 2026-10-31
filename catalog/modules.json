@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "organization": "labview-benchmark-actor-plugins",
+  "modules": [
+    {
+      "repository": "labview-benchmark-actor-plugins/core",
+      "role": "framework-module",
+      "status": "blocked",
+      "enabled": false,
+      "dependsOn": [
+        "labview-benchmark-actor-plugins/dependencies",
+        "labview-benchmark-actor-plugins/modules"
+      ],
+      "classificationNotes": [
+        "Core.lvproj contains Core.lvlib.",
+        "Core.lvlib links KeyToVirtualKey.vi from dependencies and KeybdEventSerializerLUT.vi from modules/coordinator."
+      ],
+      "blockers": [
+        "Resolve or replace cross-repository LVLIB paths in a fresh checkout layout."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/dependencies",
+      "role": "shared-dependency-package",
+      "status": "blocked",
+      "enabled": false,
+      "dependsOn": [],
+      "classificationNotes": [
+        "Sandbox configs define source-distribution, package-installer, and PPL outputs for the fork profile; the org profile defines source-distribution and VIPB outputs.",
+        "Both profiles pin jdp_science_jsontext 1.9.1.125, oglib_boolean 6.0.0.9, oglib_comparison 6.0.0.4, and the LabVIEW 2026 runtime package."
+      ],
+      "blockers": [
+        "dependencies.lvlib references Test Procedure.ctl from testcoordinator, while testcoordinator consumes dependencies.lvlibp; resolve the release/test boundary.",
+        "The VIPB source/output folders are build-workspace paths and it references lbap-dependencies.vipc, which is not present in the repository."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/Launcher",
+      "role": "plugin-module",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": [],
+      "classificationNotes": [
+        "Launcher.lvproj contains Launcher.lvlib; the LVLIB describes launching cloneable modules."
+      ],
+      "blockers": [
+        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/modules",
+      "role": "integration-aggregate",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": [
+        "labview-benchmark-actor-plugins/core",
+        "labview-benchmark-actor-plugins/Launcher",
+        "labview-benchmark-actor-plugins/replay",
+        "labview-benchmark-actor-plugins/UserEventRecorder"
+      ],
+      "classificationNotes": [
+        "modules.lvproj aggregates Core, Launcher, and UserEventRecorder; coordinator also references Replay.",
+        "Contains prototype projects and a VIPC archive with 86 package entries, all currently marked not included, not dependencies, and not pinned."
+      ],
+      "blockers": [
+        "Decide whether this repository is a distributable product or an integration workspace; do not publish its inactive VIPC as the dependency contract."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/replay",
+      "role": "plugin-module",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": [],
+      "classificationNotes": [
+        "Contains Replay.lvproj and Replay.lvlib."
+      ],
+      "blockers": [
+        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/testcoordinator",
+      "role": "test-harness",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": ["labview-benchmark-actor-plugins/dependencies"],
+      "classificationNotes": [
+        "Contains testcoordinator.lvproj, API tests, and an LVLibP dependency on the shared dependencies package."
+      ],
+      "blockers": [
+        "Confirm whether this repository publishes a reusable module or remains a test harness."
+      ]
+    },
+    {
+      "repository": "labview-benchmark-actor-plugins/UserEventRecorder",
+      "role": "plugin-module",
+      "status": "needs-classification",
+      "enabled": false,
+      "dependsOn": [],
+      "classificationNotes": [
+        "UserEventRecorder.lvproj contains UserEventRecorder.lvlib and API tests."
+      ],
+      "blockers": [
+        "Determine package format, direct dependencies, and a fresh-checkout build/test command."
+      ]
+    }
+  ]
+}
