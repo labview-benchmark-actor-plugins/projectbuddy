@@ -47,10 +47,14 @@
     "release": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tag", "publishedAt", "immutable"],
+      "required": ["tag", "immutable"],
       "properties": {
         "tag": { "$ref": "#/definitions/nonBlankString" },
-        "publishedAt": { "type": "string", "format": "date-time" },
+        "publishedAt": {
+          "description": "Informational publication timestamp when known. GitHub release metadata is authoritative.",
+          "type": "string",
+          "format": "date-time"
+        },
         "immutable": { "const": true },
         "url": { "type": "string", "format": "uri" }
       }
