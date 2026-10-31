@@ -4,15 +4,29 @@ on:
   pull_request:
     paths:
       - "catalog/**"
+      - "examples/**"
+      - "schemas/**"
       - "scripts/build_plan.py"
+      - "scripts/stage-immutable-release-dependency.ps1"
+      - "scripts/stage-release-dependency.ps1"
+      - "scripts/validate-release-manifest.ps1"
       - "tests/test_build_plan.py"
+      - "tests/Test-ReleaseManifest.ps1"
+      - "README.md"
       - ".github/workflows/build-all-plan.yml"
   push:
     branches: [main]
     paths:
       - "catalog/**"
+      - "examples/**"
+      - "schemas/**"
       - "scripts/build_plan.py"
+      - "scripts/stage-immutable-release-dependency.ps1"
+      - "scripts/stage-release-dependency.ps1"
+      - "scripts/validate-release-manifest.ps1"
       - "tests/test_build_plan.py"
+      - "tests/Test-ReleaseManifest.ps1"
+      - "README.md"
       - ".github/workflows/build-all-plan.yml"
   workflow_dispatch:
 
@@ -34,3 +48,18 @@ jobs:
       - name: Test build planner
         shell: bash
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+  release-contract:
+    name: Validate release contract (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout ProjectBuddy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Test release manifests and staging
+        shell: pwsh
+        run: ./tests/Test-ReleaseManifest.ps1

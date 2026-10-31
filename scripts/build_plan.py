@@ -8,6 +8,7 @@ from pathlib import Path
 
 ORGANIZATION = "labview-benchmark-actor-plugins"
 REPOSITORY_PATTERN = re.compile(r"^labview-benchmark-actor-plugins/[A-Za-z0-9_.-]+$")
+TESTED_SOURCE_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 VALID_STATUSES = {"needs-classification", "ready", "blocked"}
 VALID_ROLES = {
     "framework-module",
@@ -35,6 +36,9 @@ def build_plan(catalog):
         repository = module.get("repository")
         if not isinstance(repository, str) or not REPOSITORY_PATTERN.fullmatch(repository):
             raise ValueError(f"Invalid or unapproved repository: {repository!r}.")
+        tested_source = module.get("testedSourceRepository")
+        if not isinstance(tested_source, str) or not TESTED_SOURCE_PATTERN.fullmatch(tested_source):
+            raise ValueError(f"Module {repository} must declare a valid testedSourceRepository.")
         if repository in by_repository:
             raise ValueError(f"Duplicate repository in catalog: {repository}.")
         if module.get("status") not in VALID_STATUSES:
@@ -100,6 +104,7 @@ def build_plan(catalog):
     excluded = [
         {
             "repository": repository,
+            "testedSourceRepository": module["testedSourceRepository"],
             "role": module["role"],
             "status": module["status"],
             "classificationNotes": module.get("classificationNotes", []),
@@ -123,6 +128,7 @@ def render_markdown(plan):
         lines.extend(["", "### Not scheduled", ""])
         for item in plan["excluded"]:
             lines.append(f"- `{item['repository']}` ({item['role']}; {item['status']}; {item['reason']})")
+            lines.append(f"  - Tested source: `{item['testedSourceRepository']}`")
             lines.extend(f"  - Evidence: {note}" for note in item["classificationNotes"])
             lines.extend(f"  - Blocker: {blocker}" for blocker in item["blockers"])
     return "\n".join(lines) + "\n"
