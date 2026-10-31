@@ -9,6 +9,13 @@ from pathlib import Path
 ORGANIZATION = "labview-benchmark-actor-plugins"
 REPOSITORY_PATTERN = re.compile(r"^labview-benchmark-actor-plugins/[A-Za-z0-9_.-]+$")
 VALID_STATUSES = {"needs-classification", "ready", "blocked"}
+VALID_ROLES = {
+    "framework-module",
+    "integration-aggregate",
+    "plugin-module",
+    "shared-dependency-package",
+    "test-harness",
+}
 DEFAULT_CATALOG = Path(__file__).resolve().parents[1] / "catalog" / "modules.json"
 
 
@@ -32,6 +39,8 @@ def build_plan(catalog):
             raise ValueError(f"Duplicate repository in catalog: {repository}.")
         if module.get("status") not in VALID_STATUSES:
             raise ValueError(f"Invalid status for {repository}: {module.get('status')!r}.")
+        if module.get("role") not in VALID_ROLES:
+            raise ValueError(f"Invalid or missing role for {repository}: {module.get('role')!r}.")
         if not isinstance(module.get("enabled"), bool):
             raise ValueError(f"Module {repository} must set enabled to a boolean.")
         dependencies = module.get("dependsOn")
@@ -41,10 +50,16 @@ def build_plan(catalog):
             raise ValueError(f"Module {repository} has duplicate dependencies.")
         if repository in dependencies:
             raise ValueError(f"Module {repository} cannot depend on itself.")
+        for field in ("classificationNotes", "blockers"):
+            values = module.get(field, [])
+            if not isinstance(values, list) or any(not isinstance(item, str) or not item.strip() for item in values):
+                raise ValueError(f"Module {repository} {field} must be an array of non-blank strings.")
 
         if module["enabled"]:
             if module["status"] != "ready":
                 raise ValueError(f"Enabled module {repository} must have status 'ready'.")
+            if module.get("blockers"):
+                raise ValueError(f"Enabled module {repository} cannot have unresolved blockers.")
             workflow = module.get("releaseWorkflow")
             if not isinstance(workflow, str) or not workflow.startswith(".github/workflows/") or ".." in Path(workflow).parts:
                 raise ValueError(f"Enabled module {repository} must declare a safe releaseWorkflow path.")
@@ -83,7 +98,14 @@ def build_plan(catalog):
         visit(repository)
 
     excluded = [
-        {"repository": repository, "status": module["status"], "reason": "disabled"}
+        {
+            "repository": repository,
+            "role": module["role"],
+            "status": module["status"],
+            "classificationNotes": module.get("classificationNotes", []),
+            "blockers": module.get("blockers", []),
+            "reason": "disabled",
+        }
         for repository, module in sorted(by_repository.items())
         if not module["enabled"]
     ]
@@ -99,7 +121,10 @@ def render_markdown(plan):
         lines.extend(["No modules are currently enabled and release-ready; no build was dispatched."])
     if plan["excluded"]:
         lines.extend(["", "### Not scheduled", ""])
-        lines.extend(f"- `{item['repository']}` ({item['status']}; {item['reason']})" for item in plan["excluded"])
+        for item in plan["excluded"]:
+            lines.append(f"- `{item['repository']}` ({item['role']}; {item['status']}; {item['reason']})")
+            lines.extend(f"  - Evidence: {note}" for note in item["classificationNotes"])
+            lines.extend(f"  - Blocker: {blocker}" for blocker in item["blockers"])
     return "\n".join(lines) + "\n"
 
 

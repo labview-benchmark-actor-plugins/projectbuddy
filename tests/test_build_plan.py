@@ -10,12 +10,15 @@ from build_plan import build_plan, render_markdown
 
 
 class BuildPlanTests(unittest.TestCase):
-    def make_module(self, name, *, enabled=False, status="needs-classification", depends_on=None, workflow=None):
+    def make_module(self, name, *, role="plugin-module", enabled=False, status="needs-classification", depends_on=None, workflow=None, blockers=None):
         module = {
             "repository": f"labview-benchmark-actor-plugins/{name}",
+            "role": role,
             "status": status,
             "enabled": enabled,
             "dependsOn": depends_on or [],
+            "classificationNotes": [],
+            "blockers": blockers or [],
         }
         if workflow is not None:
             module["releaseWorkflow"] = workflow
@@ -30,6 +33,12 @@ class BuildPlanTests(unittest.TestCase):
         self.assertEqual(plan["buildOrder"], [])
         self.assertEqual(len(plan["excluded"]), 7)
         self.assertIn("no build was dispatched", render_markdown(plan))
+        modules = {module["repository"].rsplit("/", 1)[-1]: module for module in catalog["modules"]}
+        self.assertEqual(modules["dependencies"]["role"], "shared-dependency-package")
+        self.assertEqual(modules["modules"]["role"], "integration-aggregate")
+        self.assertEqual(modules["testcoordinator"]["role"], "test-harness")
+        self.assertFalse(any(module["enabled"] for module in catalog["modules"]))
+        self.assertTrue(modules["dependencies"]["blockers"])
 
     def test_ready_modules_follow_dependency_order(self):
         modules = [
@@ -72,6 +81,17 @@ class BuildPlanTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "non-enabled module"):
             build_plan(self.make_catalog(modules))
+
+    def test_enabled_module_with_blockers_is_rejected(self):
+        module = self.make_module(
+            "plugin",
+            enabled=True,
+            status="ready",
+            workflow=".github/workflows/release.yml",
+            blockers=["unresolved checkout dependency"],
+        )
+        with self.assertRaisesRegex(ValueError, "cannot have unresolved blockers"):
+            build_plan(self.make_catalog([module]))
 
 
 if __name__ == "__main__":

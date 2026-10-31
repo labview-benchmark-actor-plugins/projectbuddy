@@ -28,11 +28,13 @@ must not be published as release evidence.
 ## Org build plan
 
 `catalog/modules.json` is the org control-plane inventory. Entries start
-disabled with `needs-classification`; the plan workflow does not dispatch
-builds. A module can be enabled only after it is classified as release-ready
-and has a safe repository-local release workflow. Dependencies are ordered
-before consumers; missing, disabled, or cyclic release dependencies fail plan
-validation.
+disabled with a source-backed role, classification notes, and blockers. The
+plan workflow does not dispatch builds. A module can be enabled only after it
+is classified as release-ready, all blockers are resolved, and it has a safe
+repository-local release workflow. Dependencies are ordered before consumers;
+missing, disabled, or cyclic release dependencies fail plan validation. The
+current seven candidates intentionally remain disabled while checkout layout,
+package boundaries, and producer workflows are being established.
 
 Run the plan and tests locally with:
 
