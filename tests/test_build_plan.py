@@ -37,6 +37,10 @@ class BuildPlanTests(unittest.TestCase):
         self.assertEqual(modules["dependencies"]["role"], "shared-dependency-package")
         self.assertEqual(modules["modules"]["role"], "integration-aggregate")
         self.assertEqual(modules["testcoordinator"]["role"], "test-harness")
+        dependency_notes = " ".join(modules["dependencies"]["classificationNotes"])
+        self.assertIn("both allow only native-windows", dependency_notes)
+        self.assertIn("package-installer, and PPL outputs", dependency_notes)
+        self.assertIn("a VIPB package output", dependency_notes)
         self.assertFalse(any(module["enabled"] for module in catalog["modules"]))
         self.assertTrue(modules["dependencies"]["blockers"])
 
