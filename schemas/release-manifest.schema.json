@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProjectBuddy Release Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "module",
+    "source",
+    "release",
+    "toolchain",
+    "artifacts",
+    "dependencies",
+    "validation"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "id", "version"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "id": { "$ref": "#/definitions/nonBlankString" },
+        "version": { "$ref": "#/definitions/nonBlankString" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "ref", "commit"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "ref": { "type": "string", "pattern": "^refs/tags/\\S+$" },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})$"
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "publishedAt", "immutable"],
+      "properties": {
+        "tag": { "$ref": "#/definitions/nonBlankString" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "immutable": { "const": true },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["labviewVersion", "labviewBitness", "vipmVersion", "runner"],
+      "properties": {
+        "labviewVersion": { "$ref": "#/definitions/nonBlankString" },
+        "labviewBitness": { "type": "string", "enum": ["32", "64"] },
+        "vipmVersion": { "$ref": "#/definitions/nonBlankString" },
+        "runner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["os", "class"],
+          "properties": {
+            "os": { "type": "string", "enum": ["windows", "linux", "macos"] },
+            "class": { "type": "string", "enum": ["hosted", "self-hosted"] }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packages", "sboms"],
+      "properties": {
+        "packages": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/packageArtifact" }
+        },
+        "sboms": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/sbomArtifact" }
+        },
+        "attestation": { "$ref": "#/definitions/asset" }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/dependency" }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tests"],
+      "properties": {
+        "status": { "const": "passed" },
+        "tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status"],
+            "properties": {
+              "name": { "$ref": "#/definitions/nonBlankString" },
+              "status": { "const": "passed" },
+              "runUrl": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "nonBlankString": { "type": "string", "pattern": "\\S" },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileName", "sha256", "sizeBytes"],
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+        },
+        "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        "sizeBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "packageArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "format", "asset"],
+      "properties": {
+        "id": { "$ref": "#/definitions/nonBlankString" },
+        "version": {
+          "description": "Exact dependency version; ranges and floating aliases are not release identities.",
+          "$ref": "#/definitions/nonBlankString"
+        },
+        "format": { "$ref": "#/definitions/nonBlankString" },
+        "asset": { "$ref": "#/definitions/asset" }
+      }
+    },
+    "sbomArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectPackageId", "subjectPackageVersion", "format", "specVersion", "asset"],
+      "properties": {
+        "subjectPackageId": { "$ref": "#/definitions/nonBlankString" },
+        "subjectPackageVersion": { "$ref": "#/definitions/nonBlankString" },
+        "format": { "const": "CycloneDX" },
+        "specVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "asset": { "$ref": "#/definitions/asset" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ecosystem", "name", "version"],
+      "properties": {
+        "ecosystem": {
+          "type": "string",
+          "enum": ["vipm", "nipkg", "labview-runtime", "git", "other"]
+        },
+        "name": { "$ref": "#/definitions/nonBlankString" },
+        "version": { "$ref": "#/definitions/nonBlankString" },
+        "repository": { "$ref": "#/definitions/nonBlankString" },
+        "releaseTag": { "$ref": "#/definitions/nonBlankString" }
+      }
+    }
+  }
+}

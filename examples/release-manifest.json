@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "module": {
+    "repository": "labview-benchmark-actor-plugins/core",
+    "id": "labview-benchmark-actor-plugins/core",
+    "version": "1.0.0"
+  },
+  "source": {
+    "repository": "labview-benchmark-actor-plugins/core",
+    "ref": "refs/tags/v1.0.0",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "release": {
+    "tag": "v1.0.0",
+    "publishedAt": "2026-10-31T00:00:00Z",
+    "immutable": true,
+    "url": "https://github.com/labview-benchmark-actor-plugins/core/releases/tag/v1.0.0"
+  },
+  "toolchain": {
+    "labviewVersion": "2026",
+    "labviewBitness": "64",
+    "vipmVersion": "26.3.2",
+    "runner": {
+      "os": "windows",
+      "class": "self-hosted"
+    }
+  },
+  "artifacts": {
+    "packages": [
+      {
+        "id": "core",
+        "version": "1.0.0",
+        "format": "vip",
+        "asset": {
+          "fileName": "core-1.0.0.vip",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sizeBytes": 1048576
+        }
+      }
+    ],
+    "sboms": [
+      {
+        "subjectPackageId": "core",
+        "subjectPackageVersion": "1.0.0",
+        "format": "CycloneDX",
+        "specVersion": "1.5",
+        "asset": {
+          "fileName": "core-1.0.0.cdx.sbom.json",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "sizeBytes": 32768
+        }
+      }
+    ]
+  },
+  "dependencies": [],
+  "validation": {
+    "status": "passed",
+    "tests": [
+      {
+        "name": "package-build",
+        "status": "passed",
+        "runUrl": "https://github.com/labview-benchmark-actor-plugins/core/actions/runs/1234567890"
+      }
+    ]
+  }
+}
