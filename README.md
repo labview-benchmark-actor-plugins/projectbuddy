@@ -52,6 +52,10 @@ exact tag currently names a published immutable release, verifies GitHub's signe
 release attestation, and matches the source commit and named asset digests before
 staging. It does not download assets. The release manifest's `immutable` field
 alone is not proof.
+GitHub's release attestation binds the tag object, which differs from the commit
+for an annotated tag. The stager resolves the exact pinned tag through the Git
+API, verifies the attested tag-object digest, and compares its peeled commit to
+`source.commit` in the release manifest.
 
 The tested `svelderrainruiz/dependencies` producer has no cross-repository source
 dependency. TestCoordinator consumes the published LVLIBP as a build dependency;

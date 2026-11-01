@@ -315,11 +315,12 @@ try {
 
     $immutableStagePath = Join-Path $root "scripts/stage-immutable-release-dependency.ps1"
     $releasePurl = 'pkg:github/svelderrainruiz/dependencies@v1.0.0.14'
+    $releaseTagObjectSha = 'a' * 40
     $statement = @{
         predicateType = 'https://in-toto.io/attestation/release/v0.2'
         predicate = @{ repository = 'svelderrainruiz/dependencies'; tag = 'v1.0.0.14'; purl = $releasePurl }
         subject = @(
-            @{ uri = $releasePurl; digest = @{ sha1 = $dependencyRelease.source.commit } },
+            @{ uri = $releasePurl; digest = @{ sha1 = $releaseTagObjectSha } },
             @{ name = 'release-manifest.json'; digest = @{ sha256 = (Get-FileHash -LiteralPath $dependencyManifestPath -Algorithm SHA256).Hash.ToLowerInvariant() } },
             @{ name = 'dependencies.lvlibp'; digest = @{ sha256 = (Get-FileHash -LiteralPath $dependencyAssetPath -Algorithm SHA256).Hash.ToLowerInvariant() } },
             @{ name = 'dependencies.lvlibp.cdx.sbom.json'; digest = @{ sha256 = (Get-FileHash -LiteralPath $dependencySbomPath -Algorithm SHA256).Hash.ToLowerInvariant() } }
@@ -328,10 +329,26 @@ try {
     $verificationState = @{
         release = @{ verificationResult = @{ statement = $statement } }
         metadata = @{ tag_name = 'v1.0.0.14'; immutable = $true; draft = $false }
-        exitCode = 0; metadataExitCode = 0; arguments = @(); metadataArguments = @()
+        tagRef = @{ ref = 'refs/tags/v1.0.0.14'; object = @{ sha = $releaseTagObjectSha; type = 'tag' } }
+        tagObject = @{ sha = $releaseTagObjectSha; object = @{ sha = $dependencyRelease.source.commit; type = 'commit' } }
+        exitCode = 0; metadataExitCode = 0; tagRefExitCode = 0; tagObjectExitCode = 0
+        arguments = @(); metadataArguments = @(); tagRefArguments = @(); tagObjectArguments = @()
     }
     function gh {
         if ($args[0] -eq 'api') {
+            $endpoint = [string]$args[-1]
+            if ($endpoint -like 'repos/svelderrainruiz/dependencies/git/ref/tags/*') {
+                $verificationState.tagRefArguments = @($args)
+                $global:LASTEXITCODE = $verificationState.tagRefExitCode
+                $verificationState.tagRef | ConvertTo-Json -Depth 20
+                return
+            }
+            if ($endpoint -like 'repos/svelderrainruiz/dependencies/git/tags/*') {
+                $verificationState.tagObjectArguments = @($args)
+                $global:LASTEXITCODE = $verificationState.tagObjectExitCode
+                $verificationState.tagObject | ConvertTo-Json -Depth 20
+                return
+            }
             $verificationState.metadataArguments = @($args)
             $global:LASTEXITCODE = $verificationState.metadataExitCode
             $verificationState.metadata | ConvertTo-Json -Depth 20
@@ -354,6 +371,8 @@ try {
     Assert-True (Test-Path -LiteralPath (Join-Path $verifiedStageRoot 'dependencies.lvlibp') -PathType Leaf) "Attested LVLIBP was not staged."
     Assert-True (($verificationState.arguments -join '|') -ceq 'release|verify|--repo|svelderrainruiz/dependencies|--format|json|v1.0.0.14') "Release verification used unexpected arguments: $($verificationState.arguments -join '|')"
     Assert-True (($verificationState.metadataArguments -join '|') -ceq 'api|repos/svelderrainruiz/dependencies/releases/tags/v1.0.0.14') "Release metadata query did not use the exact consumer repository and tag."
+    Assert-True (($verificationState.tagRefArguments -join '|') -ceq 'api|repos/svelderrainruiz/dependencies/git/ref/tags/v1.0.0.14' -and
+        ($verificationState.tagObjectArguments -join '|') -ceq "api|repos/svelderrainruiz/dependencies/git/tags/$releaseTagObjectSha") "Annotated tag verification used unexpected arguments: ref=$($verificationState.tagRefArguments -join '|'); tag=$($verificationState.tagObjectArguments -join '|')."
     $immutableStageArguments.WorkspaceRoot = $blockedStageRoot
     $verificationState.metadata.immutable = $false
     Assert-Throw { & $immutableStagePath @immutableStageArguments } '*published immutable release*'
@@ -374,8 +393,11 @@ try {
     Assert-Throw { & $immutableStagePath @immutableStageArguments } '*attested release identity*'
     $statement.predicate.repository = 'svelderrainruiz/dependencies'
     $statement.subject[0].digest.sha1 = 'b' * 40
-    Assert-Throw { & $immutableStagePath @immutableStageArguments } '*attested source commit*'
-    $statement.subject[0].digest.sha1 = $dependencyRelease.source.commit
+    Assert-Throw { & $immutableStagePath @immutableStageArguments } '*attested source subject*'
+    $statement.subject[0].digest.sha1 = $releaseTagObjectSha
+    $verificationState.tagObject.object.sha = 'b' * 40
+    Assert-Throw { & $immutableStagePath @immutableStageArguments } '*tag target commit does not match*'
+    $verificationState.tagObject.object.sha = $dependencyRelease.source.commit
     $manifestDigest = $statement.subject[1].digest.sha256
     $statement.subject[1].digest.sha256 = 'f' * 64
     Assert-Throw { & $immutableStagePath @immutableStageArguments } '*release-manifest.json*attestation*'
