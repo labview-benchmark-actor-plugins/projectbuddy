@@ -87,10 +87,41 @@ if ($statement.predicateType -cne 'https://in-toto.io/attestation/release/v0.2' 
     [string]::IsNullOrWhiteSpace([string]$predicate.purl)) {
     throw 'The attested release identity does not match the consumer pin.'
 }
+$tagRefEndpoint = 'repos/{0}/git/ref/tags/{1}' -f $dependency.repository, [uri]::EscapeDataString($dependency.releaseTag)
+$tagRefJson = & gh api -- $tagRefEndpoint
+if ($LASTEXITCODE -ne 0) { throw "GitHub tag reference query failed with exit code $LASTEXITCODE." }
+try {
+    $tagRef = ($tagRefJson -join [Environment]::NewLine) | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+} catch {
+    throw "GitHub tag reference is invalid JSON: $($_.Exception.Message)"
+}
+if ($tagRef.ref -cne "refs/tags/$($dependency.releaseTag)" -or
+    $tagRef.object.sha -notmatch '^(?:[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})$' -or
+    $tagRef.object.type -notin @('commit', 'tag')) {
+    throw 'The pinned GitHub tag reference is missing or malformed.'
+}
+$attestedTagObjectSha = [string]$tagRef.object.sha
+$tagObject = $tagRef.object
+for ($tagDepth = 0; $tagObject.type -ceq 'tag'; $tagDepth++) {
+    if ($tagDepth -ge 10) { throw 'The pinned GitHub tag has too many nested annotated tags.' }
+    $tagObjectEndpoint = 'repos/{0}/git/tags/{1}' -f $dependency.repository, $tagObject.sha
+    $tagObjectJson = & gh api -- $tagObjectEndpoint
+    if ($LASTEXITCODE -ne 0) { throw "GitHub annotated tag query failed with exit code $LASTEXITCODE." }
+    try {
+        $tagObjectRecord = ($tagObjectJson -join [Environment]::NewLine) | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+    } catch {
+        throw "GitHub annotated tag is invalid JSON: $($_.Exception.Message)"
+    }
+    if ($tagObjectRecord.sha -cne $tagObject.sha) { throw 'GitHub annotated tag response does not match the requested tag object.' }
+    $tagObject = $tagObjectRecord.object
+}
+if ($tagObject.type -cne 'commit' -or $tagObject.sha -ine $releaseManifest.source.commit) {
+    throw 'The pinned tag target commit does not match the dependency release manifest.'
+}
 $sourceSubjects = @($statement.subject | Where-Object { $_.uri -ceq $predicate.purl })
-$commitAlgorithm = if ($releaseManifest.source.commit.Length -eq 40) { 'sha1' } else { 'sha256' }
-if ($sourceSubjects.Count -ne 1 -or $sourceSubjects[0].digest[$commitAlgorithm] -ine $releaseManifest.source.commit) {
-    throw 'The attested source commit does not match the dependency release manifest.'
+$tagHashAlgorithm = if ($attestedTagObjectSha.Length -eq 40) { 'sha1' } else { 'sha256' }
+if ($sourceSubjects.Count -ne 1 -or $sourceSubjects[0].digest[$tagHashAlgorithm] -ine $attestedTagObjectSha) {
+    throw 'The attested source subject does not match the pinned Git tag object.'
 }
 
 $assets = @(
